@@ -1,4 +1,4 @@
-rsync -av ./ julesitinr@poivron.o2switch.net:~/search-an --exclude="/venv"
+rsync -av ./ julesitinr@poivron.o2switch.net:~/cr-an-search --exclude="/venv" --exclude=".idea/"
 
 # ssh julesitinr@poivron.o2switch.net
 

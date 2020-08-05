@@ -6,6 +6,7 @@ from xml.dom import minidom
 
 import re
 import time
+import os
 
 start_time = time.time()
 
@@ -33,30 +34,53 @@ def del_accent(text):
     return text
 
 
-input_word = input("Terme à rechercher: ")
-unified_input_word = del_accent(input_word)
+input_word_list = []
+input_word_list.append(input("Terme à rechercher: "))
+
+while True:
+    other_word = input("Rajouter un autre terme [n]: ")
+    if other_word not in ['n', '']:
+        input_word_list.append(other_word)
+        pass
+    else:
+        break
 
 
 count = 0
 
-# on va pouvoir récupérer les différents fichiers directement depuis internet ici
-file = "CRI_20111004_083.xml"
+directory = "2013"
 
-doc = minidom.parse(file)
 
-nb_para = doc.getElementsByTagName("Para")       # je récupère le nombre de balises à extraire
+i = 0
+for fname in os.listdir(directory):
+    i += 1
+    print("Processing {file} ... ({current}/{range})".format(file=fname, current=i, range=len(os.listdir(directory))))
+    if fname.endswith(".xml"):
+        doc = minidom.parse(directory + "/" + fname)
 
-for n in range(nb_para.length):
-    para = doc.getElementsByTagName("Para")[n]   # récupère le contenu de la balise xml Para
+        nb_para = doc.getElementsByTagName("Para")  # je récupère le nombre de balises à extraire
 
-    text = getNodeText(para)                     # contenu de la balise en string
-    lctext = text.lower()   # je mets tout en minuscule pour ne pas louper les occurences en majuscule
-    unifiedtext = del_accent(lctext)
+        for n in range(nb_para.length):
+            para = doc.getElementsByTagName("Para")[n]  # récupère le contenu de la balise xml Para
 
-    count += sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(unified_input_word), unifiedtext))  # compte les occurences
-    # plus économique que de passer par une liste avec split et permet de rechercher avec des inputs de plusieurs mots
+            text = getNodeText(para)  # contenu de la balise en string
+            lctext = text.lower()  # je mets tout en minuscule pour ne pas louper les occurences en majuscule
+            unifiedtext = del_accent(lctext)
 
-print("\nLe terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word, d=count))
+            for word in input_word_list:
+                count += sum(
+                    1 for _ in
+                    re.finditer(r'\b%s\b' % re.escape(del_accent(word)), unifiedtext))  # compte les occurences
+                # plus économique que de passer par une liste avec split et permet de rechercher avec des inputs de
+                # plusieurs mots
+        continue
+    else:
+        continue
+
+if len(input_word_list) == 1:
+    print("\nLe terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=count))
+else:
+    print("\nLes termes '{s}' ont été trouvés {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=count))
 
 
 print("%s seconds" % (time.time() - start_time))
