@@ -33,7 +33,7 @@ def del_accent(text):
     return text
 
 
-input_word = input("Terme à rechercher: ")
+input_word = raw_input("Terme à rechercher: ")
 unified_input_word = del_accent(input_word)
 
 
@@ -49,11 +49,12 @@ nb_para = doc.getElementsByTagName("Para")       # je récupère le nombre de ba
 for n in range(nb_para.length):
     para = doc.getElementsByTagName("Para")[n]   # récupère le contenu de la balise xml Para
 
-    text = getNodeText(para)                     # contenu de la balise en string
-    lctext = text.lower()   # je mets tout en minuscule pour ne pas louper les occurences en majuscule
+    text = getNodeText(para)  # contenu de la balise en string
+    lctext = text.lower()  # je mets tout en minuscule pour ne pas louper les occurences en majuscule
     unifiedtext = del_accent(lctext)
 
-    count += sum(1 for _ in re.finditer(r'\b%s\b' % re.escape(unified_input_word), unifiedtext))  # compte les occurences
+    count += sum(
+        1 for _ in re.finditer(r'\b%s\b' % re.escape(unified_input_word), unifiedtext))  # compte les occurences
     # plus économique que de passer par une liste avec split et permet de rechercher avec des inputs de plusieurs mots
 
 print("\nLe terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word, d=count))

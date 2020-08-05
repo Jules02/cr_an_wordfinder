@@ -1,0 +1,9 @@
+rsync -av ./ julesitinr@poivron.o2switch.net:~/search-an --exclude="/venv"
+
+# ssh julesitinr@poivron.o2switch.net
+
+# cd chaudoudoux-mdl.fr
+
+# composer install --no-dev --optimize-autoloader
+
+# APP_ENV=prod APP_DEBUG=0 php bin/console cache:clear
