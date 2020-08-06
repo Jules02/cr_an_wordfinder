@@ -7,6 +7,7 @@ from xml.dom import minidom
 import re
 import time
 import os
+import argparse
 
 start_time = time.time()
 
@@ -34,17 +35,26 @@ def del_accent(text):
     return text
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument("word", type=str, nargs="*", help="word(s) to be searched")
+args = parser.parse_args()
+
 input_word_list = []
-input_word_list.append(input("Terme à rechercher: "))
 
-while True:
-    other_word = input("Rajouter un autre terme [n]: ")
-    if other_word not in ['n', '']:
-        input_word_list.append(other_word)
-        pass
-    else:
-        break
+if args.word:
+    input_word_list = args.word
+else:
+    input_word_list.append(input("Terme à rechercher: "))
 
+    while True:
+        other_word = input("Rajouter un autre terme [n]: ")
+        if other_word not in ['n', '']:
+            input_word_list.append(other_word)
+            pass
+        else:
+            break
+
+print("\nSearching for {}...\n".format(input_word_list))
 
 count = 0
 
@@ -56,26 +66,30 @@ for fname in os.listdir(directory):
     i += 1
     print("Processing {file} ... ({current}/{range})".format(file=fname, current=i, range=len(os.listdir(directory))))
     if fname.endswith(".xml"):
-        doc = minidom.parse(directory + "/" + fname)
+        try:
+            doc = minidom.parse(directory + "/" + fname)
 
-        nb_para = doc.getElementsByTagName("Para")  # je récupère le nombre de balises à extraire
+            nb_para = doc.getElementsByTagName("Para")  # je récupère le nombre de balises à extraire
 
-        for n in range(nb_para.length):
-            para = doc.getElementsByTagName("Para")[n]  # récupère le contenu de la balise xml Para
+            for n in range(nb_para.length):
+                para = doc.getElementsByTagName("Para")[n]  # récupère le contenu de la balise xml Para
 
-            text = getNodeText(para)  # contenu de la balise en string
-            lctext = text.lower()  # je mets tout en minuscule pour ne pas louper les occurences en majuscule
-            unifiedtext = del_accent(lctext)
+                text = getNodeText(para)  # contenu de la balise en string
+                lctext = text.lower()  # je mets tout en minuscule pour ne pas louper les occurences en majuscule
+                unifiedtext = del_accent(lctext)
 
-            for word in input_word_list:
-                count += sum(
-                    1 for _ in
-                    re.finditer(r'\b%s\b' % re.escape(del_accent(word)), unifiedtext))  # compte les occurences
-                # plus économique que de passer par une liste avec split et permet de rechercher avec des inputs de
-                # plusieurs mots
+                for word in input_word_list:
+                    count += sum(
+                        1 for _ in
+                        re.finditer(r'\b%s\b' % re.escape(del_accent(word)), unifiedtext))  # compte les occurences
+                    # plus économique que de passer par une liste avec split et permet de rechercher avec des inputs de
+                    # plusieurs mot
+        except:
+            print("Error processing {}".format(fname))
         continue
     else:
         continue
+
 
 if len(input_word_list) == 1:
     print("\nLe terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=count))
