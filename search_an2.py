@@ -4,6 +4,8 @@
 
 from xml.dom import minidom
 
+import xlwt
+
 import re
 import time
 import os
@@ -40,6 +42,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("word", type=str, nargs="*", help="word(s) to be searched")
 parser.add_argument("-y", "--year", action="store_true", help="get yearly detailled results")
 parser.add_argument("-m", "--month", action="store_true", help="get monthly detailled results")
+parser.add_argument("-sy", "--startyear", help="define start year to be searched")
+parser.add_argument("-ey", "--endyear", help="define end year to be searched")
+parser.add_argument("-xls", "--savexls", action="store_true", help="save results under a xls file")
 args = parser.parse_args()
 
 input_word_list = []
@@ -62,8 +67,13 @@ print("\nSearching for {}...\n".format(input_word_list))
 total_count = 0
 occurences_per_year = {}
 
-start_year = 2011
-end_year = 2015
+if args.startyear and args.endyear:
+    start_year = int(args.startyear)
+    end_year = int(args.endyear)
+else:
+    start_year = 2011
+    end_year = 2020
+
 
 for year in range(start_year, end_year+1):   # borne supérieure fermée
     i = 0
@@ -106,6 +116,8 @@ for year in range(start_year, end_year+1):   # borne supérieure fermée
     print("Done processing {}".format(directory))
 
 print('\n--------------------------\n')
+print('SUCCESS')
+print('\n--------------------------\n')
 
 if len(input_word_list) == 1:
     print("Le terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=total_count))
@@ -131,4 +143,48 @@ elif args.month:
         print("\n")
 
 
-print("%s seconds" % (time.time() - start_time))
+if args.savexls:
+    workbook = xlwt.Workbook()
+
+    sheet = workbook.add_sheet("Analyse")
+
+    bold = xlwt.easyxf('font: bold 1')
+
+    sheet.write(0, 0, "Termes recherchés:", bold)
+    for i in range(len(input_word_list)):
+        sheet.write(0, i+1, input_word_list[i])
+
+    k = 1
+    if args.year and args.month:
+        for year in range(start_year, end_year + 1):
+            sheet.write(k, 0, "{}:".format(year))
+
+            for month in occurences_per_year[year]:
+                sheet.write(k, 1, "{}:".format(month))
+                sheet.write(k, 2, occurences_per_year[year][month])
+                k += 1
+            sheet.write(k, 1, "Total:")
+            sheet.write(k, 2, sum(occurences_per_year[year].values()))
+            k += 1
+    elif args.year:
+        for year in range(start_year, end_year + 1):
+            sheet.write(k, 0, "{}:".format(year))
+            sheet.write(k, 1, sum(occurences_per_year[year].values()))
+            k += 1
+    elif args.month:
+        for year in range(start_year, end_year + 1):
+            for month in occurences_per_year[year]:
+                sheet.write(k, 0, "{month}/{year}:".format(month=month, year=year))
+                sheet.write(k, 1, occurences_per_year[year][month])
+                k += 1
+    sheet.write(k + 1, 0, "TOTAL")
+    sheet.write(k + 1, 1, total_count)
+
+    fname = "results/analysis_{}.xls".format(round(time.time()))
+    workbook.save(fname)
+
+    print("Results saved under {}".format(fname))
+
+
+print("executed in %s seconds" % (time.time() - start_time))
+print("\nEND\n")
