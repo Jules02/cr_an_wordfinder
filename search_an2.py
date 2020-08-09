@@ -8,6 +8,7 @@ import re
 import time
 import os
 import argparse
+import sys
 
 start_time = time.time()
 
@@ -66,67 +67,68 @@ end_year = 2015
 
 for year in range(start_year, end_year+1):   # borne supérieure fermée
     i = 0
-    directory = str(year)
+    occurences_per_month = {'01': 0, '02': 0, '03': 0, '04': 0, '05': 0, '06': 0, '07': 0, '08': 0, '09': 0, '10': 0, '11': 0, '12': 0, }
+    directory = "data/" + str(year)
+
     for fname in os.listdir(directory):
         i += 1
-        print("Processing {file} ... ({current}/{range})".format(file=fname, current=i, range=len(os.listdir(directory))))
+        sys.stdout.write("\rCurrently processing {file} ... ({current}/{range})\n".format(file=fname, current=i, range=len(os.listdir(directory))))
+        sys.stdout.flush()
         if fname.endswith(".xml"):
-            try:
-                occurences_per_month = {}
-                month = fname[8:10]
+            month = fname[8:10]
 
-                doc = minidom.parse(directory + "/" + fname)
+            doc = minidom.parse(directory + "/" + fname)
 
-                nb_para = doc.getElementsByTagName("Para")  # je récupère le nombre de balises à extraire
+            nb_para = doc.getElementsByTagName("Para")  # je récupère le nombre de balises à extraire
 
-                for n in range(nb_para.length):
-                    para = doc.getElementsByTagName("Para")[n]  # récupère le contenu de la balise xml Para
+            count = 0
 
-                    text = getNodeText(para)  # contenu de la balise en string
-                    lctext = text.lower()  # je mets tout en minuscule pour ne pas louper les occurences en majuscule
-                    unifiedtext = del_accent(lctext)
+            for n in range(nb_para.length):
+                para = doc.getElementsByTagName("Para")[n]  # récupère le contenu de la balise xml Para
 
-                    for word in input_word_list:
-                        occurences_per_month[month] += sum(
-                            1 for _ in
-                            re.finditer(r'\b%s\b' % re.escape(del_accent(word)), unifiedtext))  # compte les occurences
-                        # plus économique que de passer par une liste avec split et permet de rechercher avec des
-                        # inputs de plusieurs mots
+                text = getNodeText(para)  # contenu de la balise en string
+                lctext = text.lower()  # je mets tout en minuscule pour ne pas louper les occurences en majuscule
+                unifiedtext = del_accent(lctext)
 
-                occurences_per_year[year] = occurences_per_month
-                # occurences_per_year[year] = sum(occurences_per_month.values())
-            except:
-                print("Error processing {}".format(fname))
-            continue
+                for word in input_word_list:
+                    count += sum(
+                        1 for _ in
+                        re.finditer(r'\b%s\b' % re.escape(del_accent(word)), unifiedtext))  # compte les occurences
+                    # plus économique que de passer par une liste avec split et permet de rechercher avec des
+                    # inputs de plusieurs mots
+
+            occurences_per_month[month] += count
+            total_count += count
+
+            occurences_per_year[year] = occurences_per_month
         else:
             continue
+    print("Done processing {}".format(directory))
 
-total_count = sum(occurences_per_year.values())
+print('\n--------------------------\n')
 
 if len(input_word_list) == 1:
-    print("\nLe terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=total_count))
+    print("Le terme '{s}' a été trouvé {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=total_count))
 else:
-    print("\nLes termes '{s}' ont été trouvés {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=total_count))
+    print("Les termes '{s}' ont été trouvés {d} fois dans les comptes rendus des séances de l'AN".format(s=input_word_list, d=total_count))
 
 if args.year and args.month:
-    print("\n\nDétails:")
-    for year in range(start_year, end_year):
+    print("\n\n\nDétails:")
+    for year in range(start_year, end_year+1):
         print("{year}: {value} occurences".format(year=year, value=sum(occurences_per_year[year].values())))
         for month in occurences_per_year[year]:
             print("---> {month}: {value} occurences".format(month= month, value=occurences_per_year[year][month]))
         print("-----------\n")
 elif args.year:
-    print("\n\nDétails par année:")
-    for year in range(start_year, end_year):
+    print("\n\n\nDétails par année:")
+    for year in range(start_year, end_year+1):
         print("{year}: {value} occurences".format(year=year, value=sum(occurences_per_year[year].values())))
 elif args.month:
-    print("\n\nDétails par mois:")
-    for year in range(start_year, end_year):
+    print("\n\n\nDétails par mois:")
+    for year in range(start_year, end_year+1):
         for month in occurences_per_year[year]:
             print("{month}/{year}: {value} occurences".format(month=month, year=year, value=occurences_per_year[year][month]))
         print("\n")
 
-
-print(occurences_per_year)
 
 print("%s seconds" % (time.time() - start_time))
